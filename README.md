@@ -4,6 +4,8 @@ Smart Agriculture using IoT is an innovative project designed to improve farming
 
 The collected data is processed using an ESP32 microcontroller and can be monitored remotely, enabling smarter and more efficient agricultural practices.
 
+
+
 🎯 Objectives
 
 To monitor soil and environmental parameters in real-time
@@ -33,6 +35,8 @@ To provide a cost-effective solution for farmers
 🚿 Smart Irrigation Support
 
 
+
+
 🛠️ Hardware Components
 
 ESP32 Microcontroller
@@ -50,6 +54,8 @@ Jumper Wires
 Power Supply
 
 
+
+
 💻 Software Requirements
 
 Arduino IDE
@@ -57,6 +63,8 @@ Arduino IDE
 Embedded C Programming
 
 ESP32 Board Package
+
+
 
 
 🔌 Working Principle
@@ -72,6 +80,8 @@ Farmers can monitor field conditions remotely.
 Based on data, irrigation and farming decisions can be made efficiently.
 
 
+
+
 📊 Advantages
 
 Efficient water and fertilizer usage
@@ -85,6 +95,8 @@ Real-time monitoring
 Low-cost implementation
 
 
+
+
 🚀 Applications
 
 Smart Farming
@@ -96,6 +108,8 @@ Greenhouse Monitoring
 Remote Agricultural Fields
 
 
+
+
 🔮 Future Scope
 
 Integration with mobile apps
@@ -105,6 +119,8 @@ AI-based crop prediction
 Automated irrigation system
 
 Cloud data storage and analytics
+
+
 
 
 🤝 Contributing
@@ -120,6 +136,8 @@ Smart Agriculture using IoT is an innovative project designed to improve farming
 The collected data is processed using an ESP32 microcontroller and can be monitored remotely, enabling smarter and more efficient agricultural practices.
 
 
+
+
 🎯 Objectives
 
 To monitor soil and environmental parameters in real-time
@@ -131,6 +149,8 @@ To reduce manual effort in farming
 To improve crop productivity and yield
 
 To provide a cost-effective solution for farmers
+
+
 
 
 ⚙️ Features
@@ -150,6 +170,8 @@ To provide a cost-effective solution for farmers
 🚿 Smart Irrigation Support
 
 
+
+
 🛠️ Hardware Components
 
 ESP32 Microcontroller
@@ -167,6 +189,8 @@ Jumper Wires
 Power Supply
 
 
+
+
 💻 Software Requirements
 
 Arduino IDE
@@ -174,6 +198,8 @@ Arduino IDE
 Embedded C Programming
 
 ESP32 Board Package
+
+
 
 
 🔌 Working Principle
@@ -189,6 +215,8 @@ Farmers can monitor field conditions remotely.
 Based on data, irrigation and farming decisions can be made efficiently.
 
 
+
+
 📊 Advantages
 
 Efficient water and fertilizer usage
@@ -202,6 +230,8 @@ Real-time monitoring
 Low-cost implementation
 
 
+
+
 🚀 Applications
 
 Smart Farming
@@ -211,6 +241,8 @@ Precision Agriculture
 Greenhouse Monitoring
 
 Remote Agricultural Fields
+
+
 
 
 🔮 Future Scope
