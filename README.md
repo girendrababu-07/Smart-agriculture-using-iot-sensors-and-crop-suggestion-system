@@ -123,7 +123,7 @@ Contributions are welcome! Feel free to fork this repository and submit a pull r
 
 📬 Contact
 
-Your Name – (www.linkedin.com/in/girendra-babu-talari-88991b2ab)
+T GIRENDRA BABU – (www.linkedin.com/in/girendra-babu-talari-88991b2ab)
 
 ⭐ Acknowledgements
 
