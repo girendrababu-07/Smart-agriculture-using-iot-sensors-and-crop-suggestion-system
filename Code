@@ -1,0 +1,244 @@
+#include <ModbusMaster.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ILI9341.h>
+
+// ---------------- TFT ----------------
+#define TFT_CS   5
+#define TFT_DC   21
+#define TFT_RST  22
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+
+// ---------------- RS485 ----------------
+#define RE_DE 4
+ModbusMaster node;
+
+// ---------------- PINS ----------------
+#define MOISTURE_PIN 34
+#define PH_PIN 35
+#define BUTTON_PIN 25
+
+bool showDetails = false;
+
+// ---------------- RS485 CONTROL ----------------
+void preTransmission() { digitalWrite(RE_DE, HIGH); }
+void postTransmission() { digitalWrite(RE_DE, LOW); }
+
+// ---------------- CROP STRUCT ----------------
+struct Crop {
+  String name;
+  int N_min, N_max;
+  int P_min, P_max;
+  int K_min, K_max;
+};
+
+// ---------------- DATABASE ----------------
+Crop crops[] = {
+  {"Rice", 100,150, 40,60, 40,60},
+  {"Maize", 120,180, 50,70, 40,60},
+  {"Wheat", 120,150, 50,60, 40,50},
+  {"Cotton", 80,120, 40,60, 40,80},
+  {"Sugarcane", 150,250, 60,100, 60,120},
+  {"Tomato", 80,150, 50,70, 50,80},
+  {"Potato", 120,200, 60,90, 80,120},
+   
+  {"Banana", 150,250, 50,80, 150,250},
+  {"Barley", 60,100, 30,50, 20,40},
+  {"Soybean", 20,60, 40,60, 40,60},
+  {"Mustard", 80,120, 40,60, 40,60},
+  {"Onion", 100,150, 50,70, 50,80}
+};
+
+int numCrops = sizeof(crops) / sizeof(crops[0]);
+
+// ---------------- BUTTON ----------------
+void handleButton() {
+  static int lastState = HIGH;
+  int current = digitalRead(BUTTON_PIN);
+
+  if (lastState == HIGH && current == LOW) {
+    showDetails = !showDetails;
+    delay(200);
+  }
+  lastState = current;
+}
+
+// ---------------- STABLE PH FUNCTION ----------------
+float readPH() {
+
+  int samples = 10;
+  float total = 0;
+
+  for (int i = 0; i < samples; i++) {
+    total += analogRead(PH_PIN);
+    delay(10);
+  }
+
+  float avg = total / samples;
+  float voltage = avg * (3.3 / 4095.0);
+
+  float ph = 7 + ((2.5 - voltage) / 0.18);
+
+  // 🔥 LIMIT FIX
+  if (ph < 3 || ph > 10) ph = 6.5;
+
+  // 🔥 SMOOTH FILTER
+  static float prevPH = 6.5;
+  if (abs(ph - prevPH) > 2) ph = prevPH;
+
+  prevPH = ph;
+
+  return ph;
+}
+
+// ---------------- MATCH LOGIC ----------------
+void findMatches(int N, int P, int K, int result[], int &count) {
+
+  count = 0;
+
+  // EXACT MATCH
+  for (int i = 0; i < numCrops; i++) {
+    if (N >= crops[i].N_min && N <= crops[i].N_max &&
+        P >= crops[i].P_min && P <= crops[i].P_max &&
+        K >= crops[i].K_min && K <= crops[i].K_max) {
+
+      result[count++] = i;
+      if (count == 3) return;
+    }
+  }
+
+  // NEAREST MATCH
+  if (count == 0) {
+
+    long diff[numCrops];
+
+    for (int i = 0; i < numCrops; i++) {
+      int avgN = (crops[i].N_min + crops[i].N_max) / 2;
+      int avgP = (crops[i].P_min + crops[i].P_max) / 2;
+      int avgK = (crops[i].K_min + crops[i].K_max) / 2;
+
+      diff[i] = abs(N - avgN) + abs(P - avgP) + abs(K - avgK);
+    }
+
+    for (int j = 0; j < 3; j++) {
+      long minVal = 999999;
+      int index = -1;
+
+      for (int i = 0; i < numCrops; i++) {
+        if (diff[i] < minVal) {
+          minVal = diff[i];
+          index = i;
+        }
+      }
+
+      result[count++] = index;
+      diff[index] = 999999;
+    }
+  }
+}
+
+// ---------------- SETUP ----------------
+void setup() {
+  Serial.begin(115200);
+  Serial2.begin(4800, SERIAL_8N1, 16, 17);
+
+  pinMode(RE_DE, OUTPUT);
+  digitalWrite(RE_DE, LOW);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  node.begin(1, Serial2);
+  node.preTransmission(preTransmission);
+  node.postTransmission(postTransmission);
+
+  tft.begin();
+  tft.setRotation(2);
+}
+
+// ---------------- LOOP ----------------
+void loop() {
+
+  handleButton();
+
+  int N = 0, P = 0, K = 0;
+
+  // NPK READ
+  if (node.readHoldingRegisters(0x001E, 3) == node.ku8MBSuccess) {
+    N = node.getResponseBuffer(0);
+    P = node.getResponseBuffer(1);
+    K = node.getResponseBuffer(2);
+  }
+
+  // SCALE FIX
+  if (N > 1000 || P > 1000 || K > 1000) {
+    N /= 10;
+    P /= 10;
+    K /= 10;
+  }
+
+  Serial.printf("N:%d P:%d K:%d\n", N, P, K);
+
+  // MOISTURE
+  int moistureRaw = analogRead(MOISTURE_PIN);
+  int moisture = map(moistureRaw, 0, 4095, 100, 0);
+
+  // STABLE PH
+  float ph = readPH();
+
+  // MATCH
+  int selected[3];
+  int count;
+  findMatches(N, P, K, selected, count);
+
+  tft.fillScreen(ILI9341_BLACK);
+  tft.setTextSize(1);
+
+  if (!showDetails) {
+
+    tft.setTextColor(ILI9341_GREEN);
+
+    tft.setCursor(10, 10);
+    tft.printf("NPK:%d,%d,%d", N, P, K);
+
+    tft.setCursor(10, 25);
+    tft.printf("Moist:%d%%", moisture);
+
+    tft.setCursor(10, 40);
+    tft.printf("pH:%.1f", ph);
+
+    tft.setTextColor(ILI9341_YELLOW);
+    tft.setCursor(10, 60);
+    tft.println("Top Crops:");
+
+    int y = 75;
+
+    for (int i = 0; i < count; i++) {
+      tft.setCursor(10, y);
+      tft.println(crops[selected[i]].name);
+      y += 12;
+    }
+
+  } else {
+
+    tft.setTextColor(ILI9341_CYAN);
+    tft.setCursor(10, 10);
+    tft.println("Crop NPK Ranges:");
+
+    int y = 30;
+
+    for (int i = 0; i < count; i++) {
+
+      tft.setCursor(10, y);
+      tft.println(crops[selected[i]].name);
+      y += 12;
+
+      tft.setCursor(10, y);
+      tft.printf("N:%d-%d P:%d-%d K:%d-%d",
+        crops[selected[i]].N_min, crops[selected[i]].N_max,
+        crops[selected[i]].P_min, crops[selected[i]].P_max,
+        crops[selected[i]].K_min, crops[selected[i]].K_max);
+
+      y += 18;
+    }
+  }
+
+  delay(800);
+}
